@@ -34,6 +34,22 @@ func saveData2(path string, data []byte) error {
 	return err
 }
 
+// append data - return error if not completed
+func appendData(path string, data []byte) error {
+	fp, err := os.OpenFile(path, os.O_APPEND, os.ModeAppend.Perm())
+	if err != nil {
+		return err
+	}
+	defer func() {
+		fp.Close()
+	}()
+	if _, err = fp.Write(data); err != nil {
+		return err
+	}
+	err = fp.Sync()
+	return err
+}
+
 func randomInt() uint {
 	return rand.UintN(math.MaxUint)
 }

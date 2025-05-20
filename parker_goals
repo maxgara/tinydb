@@ -1,5 +1,11 @@
 
+files: 
+1. latest.temp - file created atomically, latest changes in log format appended. Checksum for each log.
+- ex: key1=0, key2=55, key1=9, del key2
+2. L1.temp - when latest.temp grows beyond set threshold, changes are evaluated and resulting state is in L1.
+- ex: key1=9, ...[older merged changes]
+3. L2, L3... - same pattern. Once each level is merged completely, contents are deleted.
+4. real.db - largest level 
 
-- find data fast
-- assign tags
 
+L1 could be a B+ tree, but for now is just going to be an array.

@@ -56,6 +56,13 @@ func randomInt() uint {
 	return rand.UintN(math.MaxUint)
 }
 
+// merge logs into database file
 func mergeLogs(logs []dblog, data []kvpair) error {
+	for _, l := range logs {
+		k := l.key
+		for i, row := range data {
+
+		}
+	}
 	return nil
 }

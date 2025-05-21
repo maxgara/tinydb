@@ -1,5 +1,7 @@
 package main
 
+//functions to write data to disk
+
 import (
 	"fmt"
 	"math"
@@ -52,4 +54,8 @@ func appendData(path string, data []byte) error {
 
 func randomInt() uint {
 	return rand.UintN(math.MaxUint)
+}
+
+func mergeLogs(logs []dblog, data []kvpair) error {
+	return nil
 }

@@ -56,6 +56,30 @@ func randomInt() uint {
 	return rand.UintN(math.MaxUint)
 }
 
+// merge logs into database file
 func mergeLogs(logs []dblog, data []kvpair) error {
+	for _, l := range logs {
+		i := sortIdx(data, l.kvpair)
+		if data[i].key == l.key && l.action == DELETE_KEY {
+			if len(data) != i+1 {
+				copy(data[i:], data[i+1:])
+			}
+			data = data[:len(data)-1]
+		}
+		if data[i].key == l.key && l.action == SET_KEY {
+			data[i] = l.kvpair
+		}
+	}
 	return nil
+}
+
+// index where new item should be inserted in sorted kvpair list
+func sortIdx(data []kvpair, item kvpair) int {
+	for i := range data {
+		if data[i].key < item.key {
+			continue
+		}
+		return i
+	}
+	return len(data) + 1
 }

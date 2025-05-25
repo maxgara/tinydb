@@ -1,0 +1,10 @@
+20	key1=abe
+2a	key2=bob
+23	key3=cathy
+4d	key4=domion
+37	key5=ester
+SET key1=ARTHUR
+DEL key2=.
+SET key3=CRAYON
+SET key6=APPLESAUCE
+SET key2=bobblehead

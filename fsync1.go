@@ -34,7 +34,7 @@ func saveData2(path string, data []byte) error {
 
 // append data - return error if not completed
 func appendData(path string, data []byte) error {
-	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0x666)
+	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0x666)
 	if err != nil {
 		return err
 	}

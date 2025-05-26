@@ -6,7 +6,6 @@ import (
 )
 
 func TestLmergeLogs(t *testing.T) {
-
 	// create a few example logs
 	otable := []struct {
 		key    string
@@ -45,4 +44,20 @@ func TestLmergeLogs(t *testing.T) {
 	fmt.Printf("nlogs:\n%v\n", nlogs)
 	fmt.Println(lmergeLogs(nlogs, ologs))
 
+}
+
+func TestIngestLogs(t *testing.T) {
+	//generate a bunch of example logs
+	var logs []dblog
+	db := newLogDB()
+	for i := range 1000 {
+		l := dblog{kvpair: kvpair{key: fmt.Sprintf("key%v", i), val: "X"}, action: SET_KEY}
+		logs = append(logs, l)
+	}
+	err := db.ingestLogs(logs)
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+	fmt.Println(db)
 }

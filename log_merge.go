@@ -2,6 +2,7 @@ package tinydb
 
 import (
 	"fmt"
+	"os"
 	"sync"
 )
 
@@ -14,31 +15,87 @@ import (
 
 const BASE_LEVEL_SIZE = 4
 const LEVEL_COUNT = 4
-const LEVEL_FILE_MAXSIZE = 100000 //split level files up after this
 
 type LogDB struct {
 	levels  []string //level file. L0 is latest.temp
+	lsizes  []int    //count of logs/kvpairs in each level
 	l_locks []sync.Mutex
 }
 
+func newLogDB() LogDB {
+	db := LogDB{}
+	db.levels = []string{"latest.temp"}
+	db.l_locks = make([]sync.Mutex, LEVEL_COUNT)
+	db.lsizes = make([]int, LEVEL_COUNT)
+
+	for i := range LEVEL_COUNT - 1 {
+		db.levels = append(db.levels, fmt.Sprintf("l%d.dbl", i+1))
+	}
+	return db
+}
+
+// if any level is over cap, merge up. Uses lfmergeLogs
+func balance(db LogDB) error {
+	max := BASE_LEVEL_SIZE
+	var err error
+	for i, sz := range db.lsizes[:len(db.levels)-1] {
+		if sz > max {
+			fmt.Printf("over cap on %v, merging to %v", i, i+1)
+			err = lfmergeLogs(i+1, i, db)
+			if err != nil {
+				return err
+			}
+			err = saveData2(db.levels[i], []byte{}) //wipe file
+			db.lsizes[i] = 0
+		}
+		max *= 2
+	}
+	return err
+}
+
 // process new log batch. safe for parallel
-func (db LogDB) ingestLogs(logs []dblog) {
+func (db LogDB) ingestLogs(logs []dblog) error {
 	db.l_locks[0].Lock()
-	appendLogs(db.levels[0], logs)
-	//TODO: level merge up
+	err := appendLogs(db.levels[0], logs)
+	if err != nil {
+		db.l_locks[0].Unlock()
+		return err
+	}
+	fmt.Println("appended logs to db level 0")
+	db.lsizes[0] += len(logs)
 	db.l_locks[0].Unlock()
+	balance(db)
+	return err
+	//TODO: level merge up
 }
 
 // like lmergeLogs but for files. safe for parallel.
-func lfmergeLogs(dlevel, slevel int, db LogDB) {
+func lfmergeLogs(dlevel, slevel int, db LogDB) error {
 	db.l_locks[dlevel].Lock()
 	db.l_locks[slevel].Lock()
+	defer func() {
+		db.l_locks[dlevel].Unlock()
+		db.l_locks[slevel].Unlock()
+	}()
 	//TODO: parse logs
-	var slogs, dlogs []dblog
+	sstr, err := os.ReadFile(db.levels[slevel])
+	if err != nil {
+		return err
+	}
+	dstr, err := os.ReadFile(db.levels[dlevel])
+	if err != nil {
+		return err
+	}
+	slogs := parseLogs(string(sstr))
+	dlogs := parseLogs(string(dstr))
 	dlogs = lmergeLogs(dlogs, slogs)
-	saveData2(db.levels[dlevel], []byte(fmt.Sprint(dlogs))) //TODO: string rep improvement
-	db.l_locks[dlevel].Unlock()
-	db.l_locks[slevel].Unlock()
+	err = saveData2(db.levels[dlevel], []byte(fmt.Sprint(dlogs))) //TODO: string rep improvement
+	return err
+}
+
+// parse log data into log objects
+func parseLogs(f string) []dblog {
+	//TODO
 }
 
 // O(n) merge logs into other logs. both sets must be pre-sorted.

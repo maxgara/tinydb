@@ -40,12 +40,13 @@ func balance(db LogDB) error {
 	var err error
 	for i, sz := range db.lsizes[:len(db.levels)-1] {
 		if sz > max {
-			fmt.Printf("over cap on %v, merging to %v", i, i+1)
+			fmt.Printf("over cap on %v, merging to %v\n", i, i+1)
 			err = lfmergeLogs(i+1, i, db)
 			if err != nil {
 				return err
 			}
 			err = saveData2(db.levels[i], []byte{}) //wipe file
+			db.lsizes[i+1] += db.lsizes[i]
 			db.lsizes[i] = 0
 		}
 		max *= 2
@@ -57,6 +58,7 @@ func balance(db LogDB) error {
 func (db LogDB) ingestLogs(logs []dblog) error {
 	db.l_locks[0].Lock()
 	err := appendLogs(db.levels[0], logs)
+	printLogs(logs)
 	if err != nil {
 		db.l_locks[0].Unlock()
 		return err
@@ -64,9 +66,8 @@ func (db LogDB) ingestLogs(logs []dblog) error {
 	fmt.Println("appended logs to db level 0")
 	db.lsizes[0] += len(logs)
 	db.l_locks[0].Unlock()
-	balance(db)
+	err = balance(db)
 	return err
-	//TODO: level merge up
 }
 
 // like lmergeLogs but for files. safe for parallel.
@@ -77,7 +78,6 @@ func lfmergeLogs(dlevel, slevel int, db LogDB) error {
 		db.l_locks[dlevel].Unlock()
 		db.l_locks[slevel].Unlock()
 	}()
-	//TODO: parse logs
 	sstr, err := os.ReadFile(db.levels[slevel])
 	if err != nil {
 		return err
@@ -86,10 +86,20 @@ func lfmergeLogs(dlevel, slevel int, db LogDB) error {
 	if err != nil {
 		return err
 	}
-	slogs := parseLogs(sstr)
-	dlogs := parseLogs(dstr)
+	slogs, err := parseLogs(sstr)
+	if err != nil {
+		return err
+	}
+	dlogs, err := parseLogs(dstr)
+	if err != nil {
+		return err
+	}
+	//must sort logs in latest.temp before merging
+	if slevel == 0 {
+		slogs = sortLogs(slogs)
+	}
 	dlogs = lmergeLogs(dlogs, slogs)
-	err = saveData2(db.levels[dlevel], []byte(fmt.Sprint(dlogs))) //TODO: string rep improvement
+	err = saveData2(db.levels[dlevel], logsToBytes(dlogs)) //TODO: string rep improvement
 	return err
 }
 
@@ -106,9 +116,11 @@ func lmergeLogs(nlogs, ologs []dblog) (sorted []dblog) {
 		// no more ologs
 		case omark == len(ologs):
 			sorted[i] = nlogs[nmark]
+			nmark++
 		// no more nlogs
 		case nmark == len(nlogs):
 			sorted[i] = ologs[omark]
+			omark++
 		//insert olog
 		case ologs[omark].key <= nlogs[nmark].key:
 			sorted[i] = ologs[omark]

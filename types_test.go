@@ -1,7 +1,6 @@
 package tinydb
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -41,5 +40,9 @@ func genlogs() []dblog {
 }
 func TestPrintData(t *testing.T) {
 	data := gendata()
-	fmt.Println(data)
+	printData(data)
+}
+func TestPrintLogs(t *testing.T) {
+	logs := genlogs()
+	printLogs(logs)
 }

@@ -32,7 +32,7 @@ type bnode struct {
 }
 
 func (p kvpair) String() string {
-	return fmt.Sprintf("%x\t%v=%v", p.csum, p.key, p.val)
+	return fmt.Sprintf("%x %v=%v", p.csum, p.key, p.val)
 }
 
 func (p dblog) String() string {
@@ -43,7 +43,17 @@ func (p dblog) String() string {
 	case SET_KEY:
 		a = "SET"
 	}
-	return fmt.Sprintf("%v %v=%v", a, p.key, p.val)
+	return fmt.Sprintf("%x %v %v=%v", p.csum, a, p.key, p.val)
+}
+func printData(data []kvpair) {
+	for _, l := range data {
+		fmt.Println(l)
+	}
+}
+func printLogs(logs []dblog) {
+	for _, l := range logs {
+		fmt.Println(l)
+	}
 }
 
 // write byte slice for saving to file
@@ -73,7 +83,7 @@ func logsToBytes(logs []dblog) []byte {
 }
 
 // parse log data into log objects
-func parseLogs(f []byte) []dblog {
+func parseLogs(f []byte) ([]dblog, error) {
 	var logs []dblog
 	var log dblog
 	var i int
@@ -97,11 +107,15 @@ func parseLogs(f []byte) []dblog {
 		log.val = string(f[marker:i])
 		//get action
 		i++ //skip delimiter
+		if i >= len(f) {
+			return nil, fmt.Errorf("parseLogs: unexpected EOF, expected action")
+		}
 		log.action = f[i]
-		i++ //move to next line
+		i += 2 //move to next line
 		logs = append(logs, log)
+		fmt.Println(log)
 	}
-	return logs
+	return logs, nil
 }
 
 // xor based checksum of kvpair

@@ -34,7 +34,8 @@ func saveData2(path string, data []byte) error {
 
 // append data - return error if not completed
 func appendData(path string, data []byte) error {
-	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0x666)
+	fp, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0o666)
+
 	if err != nil {
 		return err
 	}
@@ -114,10 +115,7 @@ func writeKvPairs(file string, data []kvpair) error {
 }
 
 // write logs to disk (append)
-func appendLogs(file string, data []dblog) error {
-	var s string
-	for _, d := range data {
-		s += fmt.Sprintln(d)
-	}
-	return appendData(file, []byte(s))
+func appendLogs(file string, logs []dblog) error {
+	data := logsToBytes(logs)
+	return appendData(file, data)
 }

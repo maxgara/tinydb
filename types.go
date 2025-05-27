@@ -17,7 +17,7 @@ const (
 // database log, extends kvpair. actions defined above (currently set or delete)
 type dblog struct {
 	kvpair
-	action int
+	action byte
 }
 
 // leaf node of B+ tree.
@@ -44,6 +44,64 @@ func (p dblog) String() string {
 		a = "SET"
 	}
 	return fmt.Sprintf("%v %v=%v", a, p.key, p.val)
+}
+
+// write byte slice for saving to file
+// format is:
+// csum 			(1 byte)
+// key				(string)
+// separator 		(1 byte)
+// val 				(string)
+// separator 		(1 byte)
+// action 			(1 byte)
+// newline 			(1 byte)
+//
+// more efficient than writing strings because strings get copied every time they are assigned
+func logsToBytes(logs []dblog) []byte {
+	const sep = byte(',')
+	var b []byte
+	for _, l := range logs {
+		b = append(b, byte(l.csum)) //careful when parsing, will have csum == sep sometimes.
+		b = append(b, []byte(l.key)...)
+		b = append(b, sep)
+		b = append(b, []byte(l.val)...)
+		b = append(b, sep)
+		b = append(b, byte(l.action))
+		b = append(b, '\n')
+	}
+	return b
+}
+
+// parse log data into log objects
+func parseLogs(f []byte) []dblog {
+	var logs []dblog
+	var log dblog
+	var i int
+	//loop over lines:
+	for i < len(f) {
+		//get csum
+		log.csum = f[i]
+		//get key
+		i++
+		marker := i
+		for i < len(f) && f[i] != ',' {
+			i++
+		}
+		log.key = string(f[marker:i])
+		//get val
+		i++ //skip delimiter
+		marker = i
+		for i < len(f) && f[i] != ',' {
+			i++
+		}
+		log.val = string(f[marker:i])
+		//get action
+		i++ //skip delimiter
+		log.action = f[i]
+		i++ //move to next line
+		logs = append(logs, log)
+	}
+	return logs
 }
 
 // xor based checksum of kvpair

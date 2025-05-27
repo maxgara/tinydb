@@ -25,7 +25,7 @@ func genlogs() []dblog {
 		key    string
 		val    string
 		csum   byte
-		action int
+		action byte
 	}{{"key1", "ARTHUR", 0, SET_KEY},
 		{"key2", ".", 0, DELETE_KEY},
 		{"key3", "CRAYON", 0, SET_KEY},

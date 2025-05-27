@@ -86,47 +86,39 @@ func lfmergeLogs(dlevel, slevel int, db LogDB) error {
 	if err != nil {
 		return err
 	}
-	slogs := parseLogs(string(sstr))
-	dlogs := parseLogs(string(dstr))
+	slogs := parseLogs(sstr)
+	dlogs := parseLogs(dstr)
 	dlogs = lmergeLogs(dlogs, slogs)
 	err = saveData2(db.levels[dlevel], []byte(fmt.Sprint(dlogs))) //TODO: string rep improvement
 	return err
 }
 
-// parse log data into log objects
-func parseLogs(f string) []dblog {
-	//TODO
-}
-
 // O(n) merge logs into other logs. both sets must be pre-sorted.
-func lmergeLogs(nlogs, ologs []dblog) (final []dblog) {
-	final = make([]dblog, len(nlogs)+len(ologs))
+func lmergeLogs(nlogs, ologs []dblog) (sorted []dblog) {
+	size := len(nlogs) + len(ologs)
+	sorted = make([]dblog, size)
 	var omark int //olog idx
-	//interleave ologs and nlogs
-	for i, l := range nlogs {
-		//final contains mark + i elements
-		count := i + omark
-		for {
-			// no more ologs
-			if omark == len(ologs) {
-				final[count] = l
-				break
-			}
-			// insert nlog
-			if ologs[omark].key >= l.key {
-				final[count] = l
-				break // next nlog
-			}
-			// insert olog
-			final[count] = ologs[omark]
+	var nmark int //nlog idx
+	var i int     //sorted idx
+	//interleave ologs and nlogs, picking the smallest option each time
+	for i < size {
+		switch {
+		// no more ologs
+		case omark == len(ologs):
+			sorted[i] = nlogs[nmark]
+		// no more nlogs
+		case nmark == len(nlogs):
+			sorted[i] = ologs[omark]
+		//insert olog
+		case ologs[omark].key <= nlogs[nmark].key:
+			sorted[i] = ologs[omark]
 			omark++
-			count++
+		//insert nlog
+		default:
+			sorted[i] = nlogs[nmark]
+			nmark++
 		}
-	}
-	// no more ilogs
-	for omark < len(ologs) {
-		ologs[len(nlogs)+omark] = ologs[omark]
-		omark++
+		i++
 	}
 	return
 }

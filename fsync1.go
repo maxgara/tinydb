@@ -45,7 +45,7 @@ func appendData(path string, data []byte) error {
 	if _, err = fp.Write(data); err != nil {
 		return err
 	}
-	err = fp.Sync()
+	//err = fp.Sync()
 	return err
 }
 

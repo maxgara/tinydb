@@ -113,7 +113,6 @@ func parseLogs(f []byte) ([]dblog, error) {
 		log.action = f[i]
 		i += 2 //move to next line
 		logs = append(logs, log)
-		fmt.Println(log)
 	}
 	return logs, nil
 }

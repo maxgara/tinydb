@@ -3,8 +3,31 @@ package tinydb
 import (
 	"fmt"
 	"os"
+	"runtime/pprof"
 	"testing"
+	"time"
 )
+
+func TestQuickSort(t *testing.T) {
+	table := []struct {
+		key    string
+		val    string
+		csum   byte
+		action byte
+	}{{"key6", ".", 0, DELETE_KEY},
+		{"key2", "APPLESAUCE", 0, SET_KEY},
+		{"key3", "APPLESAUCE", 0, SET_KEY},
+		{"key9", "APPLESAUCE", 0, SET_KEY},
+		{"key8", "CRAYON", 0, SET_KEY},
+		{"key0", "ARTHUR", 0, SET_KEY},
+	}
+	logs := make([]dblog, len(table))
+	for i, r := range table {
+		logs[i] = dblog{kvpair: kvpair{key: r.key, val: r.val}, action: r.action}
+		logs[i].csum = csumLog(logs[i])
+	}
+	printLogs(quickSort(logs))
+}
 
 func TestLmergeLogs(t *testing.T) {
 	// create a few example logs
@@ -50,24 +73,35 @@ func TestLmergeLogs(t *testing.T) {
 	printLogs(merged)
 }
 
-const INGEST_COUNT = 1000
+const INGEST_COUNT = 100
+const GROUP_SIZE = 10
 
 func TestIngestLogs(t *testing.T) {
+	f, _ := os.Create("cpuprof")
+	pprof.StartCPUProfile(f)
 	resetFiles()
 	//generate a bunch of example logs
-	var logs []dblog
 	db := newLogDB()
-	for i := range INGEST_COUNT {
-		l := dblog{kvpair: kvpair{key: fmt.Sprintf("key%v", INGEST_COUNT-i), val: "X"}, action: SET_KEY}
-		logs = append(logs, l)
+	var i int
+	st := time.Now()
+	for i < INGEST_COUNT {
+		var logs []dblog
+		for range GROUP_SIZE {
+			l := dblog{kvpair: kvpair{key: fmt.Sprintf("key%v", -i), val: "X"}, action: SET_KEY}
+			logs = append(logs, l)
+			i++
+		}
+		err := db.ingestLogs(logs)
+		if err != nil {
+			fmt.Println(err)
+			t.Fail()
+		}
 	}
+	dur := time.Since(st)
+	fmt.Printf("total time: %d ms\n", dur/time.Millisecond)
+	pprof.StopCPUProfile()
 	//printLogs(logs)
-	err := db.ingestLogs(logs)
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	}
-	fmt.Println(db)
+	//fmt.Println(db)
 }
 
 // creates all file levels, blank

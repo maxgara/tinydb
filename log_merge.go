@@ -11,16 +11,10 @@ import (
 // logs in latest.temp are sorted into l1.dbl. as this is done the sorted logs are removed from latest.temp
 // logs in l1 are merged into l2, then l3 as soon as each log file hits a prerequisite size (merge threshold)
 // each level has a merge threshold 2x the previous level (so if l3 has a threshold of 1000 logs, l2 has 2000 etc.)
-// when l3 hits threshold, it is sorted into real.db, which holds kvpairs instead of logs (pretty arbitrary distinction though)
+// when l3 hits threshold, it is sorted into real.db.
+// previous version had distinction between kvpairs and dblogs, now considered the same.
 
 const LEVEL_COUNT = 4
-
-type LogDB struct {
-	levels  []string //level file. L0 is latest.temp
-	lsizes  []int    //count of logs/kvpairs in each level
-	l_locks []sync.Mutex
-	l_lims  []int //max size in each level before merge is triggered
-}
 
 func newLogDB(base_lim int) LogDB {
 	db := LogDB{}

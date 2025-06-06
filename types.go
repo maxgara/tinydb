@@ -28,37 +28,30 @@ type logLevel interface {
 	unlock()                  //mutex Unlock
 }
 
-// key value pair. Important: caller is responsible for setting the csum value.
-type kvpair struct {
-	key  string
-	val  string
-	csum byte //checksum
-}
-
-const (
-	DELETE_KEY = iota
-	SET_KEY
-)
-
 // database log, extends kvpair. actions defined above (currently set or delete)
+// Important: caller is responsible for setting the csum value.
 type dblog struct {
-	kvpair
+	key    string
+	val    string
+	csum   byte //checksum
 	action byte
 }
+
+// definitions of actions for dblog
+const (
+	DELETE_KEY = iota //delete key and associated value
+	SET_KEY           //create or modify value corresponding to key
+)
 
 // leaf node of B+ tree.
 type bleaf struct {
 	test string //if key<test, pick this leaf node
-	data []kvpair
+	data []dblog
 }
 
 // branch/root node of B+ tree
 type bnode struct {
 	branches []bleaf
-}
-
-func (p kvpair) String() string {
-	return fmt.Sprintf("%x %v=%v", p.csum, p.key, p.val)
 }
 
 func (p dblog) String() string {
@@ -71,7 +64,7 @@ func (p dblog) String() string {
 	}
 	return fmt.Sprintf("%x %v %v=%v", p.csum, a, p.key, p.val)
 }
-func printData(data []kvpair) {
+func printData(data []dblog) {
 	for _, l := range data {
 		fmt.Println(l)
 	}
@@ -144,16 +137,11 @@ func parseLogs(f []byte) ([]dblog, error) {
 }
 
 // xor based checksum of kvpair
-func csum(p kvpair) byte {
+func csum(p dblog) byte {
 	s := p.key + p.val
 	var ch byte = 0x0
 	for i := range s {
 		ch = ch ^ s[i]
 	}
-	return ch
-}
-
-// xor based checksum for dblog
-func csumLog(l dblog) byte {
-	return csum(l.kvpair) ^ byte(l.action)
+	return ch ^ p.action
 }

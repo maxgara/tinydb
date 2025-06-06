@@ -23,8 +23,8 @@ func TestQuickSort(t *testing.T) {
 	}
 	logs := make([]dblog, len(table))
 	for i, r := range table {
-		logs[i] = dblog{kvpair: kvpair{key: r.key, val: r.val}, action: r.action}
-		logs[i].csum = csumLog(logs[i])
+		logs[i] = dblog{key: r.key, val: r.val, action: r.action}
+		logs[i].csum = csum(logs[i])
 	}
 	printLogs(quickSort(logs))
 }
@@ -54,13 +54,13 @@ func TestLmergeLogs(t *testing.T) {
 
 	ologs := make([]dblog, len(otable))
 	for i, r := range otable {
-		ologs[i] = dblog{kvpair: kvpair{key: r.key, val: r.val}, action: r.action}
-		ologs[i].csum = csumLog(ologs[i])
+		ologs[i] = dblog{key: r.key, val: r.val, action: r.action}
+		ologs[i].csum = csum(ologs[i])
 	}
 	nlogs := make([]dblog, len(ntable))
 	for i, r := range ntable {
-		nlogs[i] = dblog{kvpair: kvpair{key: r.key, val: r.val}, action: r.action}
-		nlogs[i].csum = csumLog(nlogs[i])
+		nlogs[i] = dblog{key: r.key, val: r.val, action: r.action}
+		nlogs[i].csum = csum(nlogs[i])
 	}
 	ologs = sortLogs(ologs)
 	nlogs = sortLogs(nlogs)
@@ -87,7 +87,7 @@ func TestIngestLogs(t *testing.T) {
 	for i < INGEST_COUNT {
 		var logs []dblog
 		for range GROUP_SIZE {
-			l := dblog{kvpair: kvpair{key: fmt.Sprintf("key%v", -i), val: "X"}, action: SET_KEY}
+			l := dblog{key: fmt.Sprintf("key%v", -i), val: "X", action: SET_KEY}
 			logs = append(logs, l)
 			i++
 		}

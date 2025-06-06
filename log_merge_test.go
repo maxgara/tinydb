@@ -16,8 +16,8 @@ func TestQuickSort(t *testing.T) {
 		action byte
 	}{{"key6", ".", 0, DELETE_KEY},
 		{"key2", "APPLESAUCE", 0, SET_KEY},
-		{"key3", "APPLESAUCE", 0, SET_KEY},
-		{"key9", "APPLESAUCE", 0, SET_KEY},
+		{"key3", "ICEBERG", 0, SET_KEY},
+		{"key9", "ILLITERATE", 0, SET_KEY},
 		{"key8", "CRAYON", 0, SET_KEY},
 		{"key0", "ARTHUR", 0, SET_KEY},
 	}
@@ -73,15 +73,15 @@ func TestLmergeLogs(t *testing.T) {
 	printLogs(merged)
 }
 
-const INGEST_COUNT = 100
-const GROUP_SIZE = 10
+const INGEST_COUNT = 1000000
+const GROUP_SIZE = 100000
 
 func TestIngestLogs(t *testing.T) {
 	f, _ := os.Create("cpuprof")
 	pprof.StartCPUProfile(f)
 	resetFiles()
 	//generate a bunch of example logs
-	db := newLogDB()
+	db := newLogDB(GROUP_SIZE)
 	var i int
 	st := time.Now()
 	for i < INGEST_COUNT {

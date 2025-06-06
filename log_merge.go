@@ -13,33 +13,36 @@ import (
 // each level has a merge threshold 2x the previous level (so if l3 has a threshold of 1000 logs, l2 has 2000 etc.)
 // when l3 hits threshold, it is sorted into real.db, which holds kvpairs instead of logs (pretty arbitrary distinction though)
 
-const BASE_LEVEL_SIZE = 10
 const LEVEL_COUNT = 4
 
 type LogDB struct {
 	levels  []string //level file. L0 is latest.temp
 	lsizes  []int    //count of logs/kvpairs in each level
 	l_locks []sync.Mutex
+	l_lims  []int //max size in each level before merge is triggered
 }
 
-func newLogDB() LogDB {
+func newLogDB(base_lim int) LogDB {
 	db := LogDB{}
 	db.levels = []string{"latest.temp"}
 	db.l_locks = make([]sync.Mutex, LEVEL_COUNT)
 	db.lsizes = make([]int, LEVEL_COUNT)
+	db.l_lims = make([]int, LEVEL_COUNT)
 
+	lim := base_lim
 	for i := range LEVEL_COUNT - 1 {
 		db.levels = append(db.levels, fmt.Sprintf("l%d.dbl", i+1))
+		db.l_lims[i] = lim
+		lim *= 2
 	}
 	return db
 }
 
 // if any level is over cap, merge up. Uses lfmergeLogs
 func balance(db LogDB) error {
-	max := BASE_LEVEL_SIZE
 	var err error
 	for i, sz := range db.lsizes[:len(db.levels)-1] {
-		if sz > max {
+		if sz > db.l_lims[i] {
 			//fmt.Printf("over cap on %v, merging to %v\n", i, i+1)
 			//st := time.Now()
 			err = lfmergeLogs(i+1, i, db)
@@ -52,7 +55,6 @@ func balance(db LogDB) error {
 			//dur := time.Since(st)
 			//fmt.Printf("merged in %d ms\n", dur/time.Millisecond)
 		}
-		max *= 2
 	}
 	return err
 }

@@ -1,6 +1,32 @@
 package tinydb
 
-import "fmt"
+//definitions of types used in tinydb implementation.
+
+import (
+	"fmt"
+	"sync"
+)
+
+type LogDB struct {
+	levels  []string //level file. L0 is latest.temp
+	lsizes  []int    //count of logs/kvpairs in each level
+	l_locks []sync.Mutex
+	l_lims  []int //max size in each level before merge is triggered
+}
+
+// will be implemented by storage structures: unsorted_LogArray, logArray, BPTree, etc.
+// represents a level of log structure merge tree
+// one major operation not implemented at Interface is merge; this cannot be done per implementation of logLevel,
+// has to be done per PAIR of implementations as merging a logArray into a logArray is different than merging a BPTree, etc.
+// naturally some merge operand combinations will not be supported.
+type logLevel interface {
+	write(logs []dblog) error //write logs
+	clear() error             //delete all logs
+	save() error              //save to file
+	size() int                //current log count
+	lock()                    //mutex Lock
+	unlock()                  //mutex Unlock
+}
 
 // key value pair. Important: caller is responsible for setting the csum value.
 type kvpair struct {

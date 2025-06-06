@@ -14,7 +14,7 @@ type LogDB struct {
 	l_lims  []int //max size in each level before merge is triggered
 }
 
-// will be implemented by storage structures: unsorted_LogArray, logArray, BPTree, etc.
+// will be implemented by storage structures: unsorted_LogArray, logArray, BPlusTree, etc.
 // represents a level of log structure merge tree
 // one major operation not implemented at Interface is merge; this cannot be done per implementation of logLevel,
 // has to be done per PAIR of implementations as merging a logArray into a logArray is different than merging a BPTree, etc.

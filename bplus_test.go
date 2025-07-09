@@ -23,3 +23,16 @@ func TestWrite1(t *testing.T) {
 	tree.Write1(log)
 	tree.walk(f)
 }
+
+// TODO: implement test
+func Test_bptreeWrite(t *testing.T) {
+	tree := trivialTree()
+	f := func(q *bptNode, bend, exit func()) {
+		fmt.Println(q)
+	}
+	tree.walk(f)
+	logs := []dblog{{key: "b", val: "newval1"}, dblog{key: "b", val: "newval2"}}
+	tree.Write(logs)
+	tree.walk(f)
+	//needs more complex cases
+}

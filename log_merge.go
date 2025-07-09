@@ -102,37 +102,6 @@ func lfmergeLogs(dlevel, slevel int, db LogDB) error {
 	return err
 }
 
-// O(n) merge logs into other logs. both sets must be pre-sorted.
-func lmergeLogs(nlogs, ologs []dblog) (sorted []dblog) {
-	size := len(nlogs) + len(ologs)
-	sorted = make([]dblog, size)
-	var omark int //olog idx
-	var nmark int //nlog idx
-	var i int     //sorted idx
-	//interleave ologs and nlogs, picking the smallest option each time
-	for i < size {
-		switch {
-		// no more ologs
-		case omark == len(ologs):
-			sorted[i] = nlogs[nmark]
-			nmark++
-		// no more nlogs
-		case nmark == len(nlogs):
-			sorted[i] = ologs[omark]
-			omark++
-		//insert olog
-		case ologs[omark].key <= nlogs[nmark].key:
-			sorted[i] = ologs[omark]
-			omark++
-		//insert nlog
-		default:
-			sorted[i] = nlogs[nmark]
-			nmark++
-		}
-		i++
-	}
-	return
-}
 
 func quickSort(logs []dblog) []dblog {
 	if len(logs) == 2 {

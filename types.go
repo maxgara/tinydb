@@ -20,12 +20,13 @@ type LogDB struct {
 // has to be done per PAIR of implementations as merging a logArray into a logArray is different than merging a BPTree, etc.
 // naturally some merge operand combinations will not be supported.
 type logLevel interface {
-	write(logs []dblog) error //write logs
-	clear() error             //delete all logs
-	save() error              //save to file
-	size() int                //current log count
-	lock()                    //mutex Lock
-	unlock()                  //mutex Unlock
+	Write(logs []dblog) error //write logs
+	Clear() error             //delete all logs
+	Save() error              //save to file
+	Size() int                //current log count
+	Limit() int               //when to merge up
+	Lock()                    //mutex Lock
+	Unlock()                  //mutex Unlock
 }
 
 // database log, extends kvpair. actions defined above (currently set or delete)
@@ -43,17 +44,6 @@ const (
 	SET_KEY           //create or modify value corresponding to key
 )
 
-// leaf node of B+ tree.
-type bleaf struct {
-	test string //if key<test, pick this leaf node
-	data []dblog
-}
-
-// branch/root node of B+ tree
-type bnode struct {
-	branches []bleaf
-}
-
 func (p dblog) String() string {
 	var a string
 	switch p.action {
@@ -64,11 +54,13 @@ func (p dblog) String() string {
 	}
 	return fmt.Sprintf("%x %v %v=%v", p.csum, a, p.key, p.val)
 }
+
 func printData(data []dblog) {
 	for _, l := range data {
 		fmt.Println(l)
 	}
 }
+
 func printLogs(logs []dblog) {
 	for _, l := range logs {
 		fmt.Println(l)

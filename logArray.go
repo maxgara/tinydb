@@ -8,58 +8,66 @@ type logArray struct {
 	name string
 	logs []dblog
 	mu   sync.Mutex
+	lim  int
 }
 
-func (a *logArray) write(logs []dblog) error {
+func (a *logArray) Write(logs []dblog) error {
 	a.logs = lmergeLogs(logs, a.logs)
 	return nil
 }
 
-func (a *logArray) clear() error {
+func (a *logArray) Clear() error {
 	a.logs = []dblog{}
 	return nil
 }
 
-func (a *logArray) save() error {
+func (a *logArray) Save() error {
 	data := logsToBytes(a.logs)
 	return saveData2(a.name, data)
 }
 
-func (a *logArray) size() int {
+func (a *logArray) Size() int {
 	return len(a.logs)
 }
 
-func (a *logArray) lock() {
+func (a *logArray) Lock() {
 	a.mu.Lock()
 }
 
-func (a *logArray) unlock() {
+func (a *logArray) Unlock() {
 	a.mu.Unlock()
+}
+
+func (a *logArray) Limit() int {
+	return a.Limit()
 }
 
 type unsortedLogArray logArray
 
 // only difference in methods for unsorted vs sorted implementations.
-func (u *unsortedLogArray) write(logs []dblog) error {
+func (u *unsortedLogArray) Write(logs []dblog) error {
 	u.logs = append(u.logs, logs...)
 	return nil
 }
 
-func (u *unsortedLogArray) clear() error {
-	return (*logArray)(u).clear()
+func (u *unsortedLogArray) Clear() error {
+	return (*logArray)(u).Clear()
 }
-func (u *unsortedLogArray) save() error {
-	return (*logArray)(u).save()
+func (u *unsortedLogArray) Save() error {
+	return (*logArray)(u).Save()
 }
 
-func (u *unsortedLogArray) size() error {
-	return (*logArray)(u).clear()
+func (u *unsortedLogArray) Size() error {
+	return (*logArray)(u).Clear()
 }
-func (u *unsortedLogArray) lock() {
-	(*logArray)(u).lock()
+func (u *unsortedLogArray) Lock() {
+	(*logArray)(u).Lock()
 }
-func (u *unsortedLogArray) unlock() {
-	(*logArray)(u).unlock()
+func (u *unsortedLogArray) Unlock() {
+	(*logArray)(u).Unlock()
+}
+func (u *unsortedLogArray) Limit() int {
+	return (*logArray)(u).Limit()
 }
 
 // O(n) merge logs into other logs. both sets must be pre-sorted.
